@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Dashboard - Copy Trader Statistics</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="logo">
+                <h2>📊 Trading Dashboard</h2>
+            </div>
+            <nav class="nav-menu">
+                <a href="#" class="nav-item active" data-view="overview">
+                    <span class="icon">🏠</span>
+                    <span>Overview</span>
+                </a>
+                <a href="#" class="nav-item" data-view="leaderboard">
+                    <span class="icon">🏆</span>
+                    <span>Leaderboard</span>
+                </a>
+                <a href="#" class="nav-item" data-view="my-stats">
+                    <span class="icon">📈</span>
+                    <span>My Statistics</span>
+                </a>
+                <a href="#" class="nav-item" data-view="backtests">
+                    <span class="icon">🔬</span>
+                    <span>Backtests</span>
+                </a>
+                <a href="#" class="nav-item" data-view="trades">
+                    <span class="icon">💼</span>
+                    <span>Trade History</span>
+                </a>
+            </nav>
+            <div class="account-selector">
+                <label for="accountId">Account ID:</label>
+                <input type="text" id="accountId" placeholder="Enter your account ID" value="11060034">
+                <button id="loadAccount" class="btn-primary">Load</button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Overview Section -->
+            <section id="overview-section" class="content-section active">
+                <div class="section-header">
+                    <h1>Overview</h1>
+                    <p class="subtitle">Platform-wide trading statistics</p>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">👥</div>
+                        <div class="stat-content">
+                            <span class="stat-label">Total Traders</span>
+                            <span class="stat-value" id="total-traders">0</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">📊</div>
+                        <div class="stat-content">
+                            <span class="stat-label">Total Trades</span>
+                            <span class="stat-value" id="total-trades">0</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">💰</div>
+                        <div class="stat-content">
+                            <span class="stat-label">Total Profit</span>
+                            <span class="stat-value" id="total-profit">$0</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">📈</div>
+                        <div class="stat-content">
+                            <span class="stat-label">Avg Win Rate</span>
+                            <span class="stat-value" id="avg-win-rate">0%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- GH TRADES Signal History -->
+                <div style="margin-top: 40px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h2>📡 GH TRADES Signal History</h2>
+                        <button id="refresh-signals-btn" style="padding: 8px 16px; background: var(--primary-color); color: white; border: none; border-radius: 6px; cursor: pointer;">
+                            🔄 Refresh
+                        </button>
+                    </div>
+
+                    <!-- Partial Exit Strategy Controls -->
+                    <div class="strategy-controls" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; margin-bottom: 30px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <h3 style="margin: 0; font-size: 1rem;">📊 Partial Exit Strategy</h3>
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <span id="strategy-total" style="font-weight: bold; color: var(--text-secondary);">Total: 100%</span>
+                                <button id="reset-strategy-btn" style="padding: 6px 12px; background: var(--border-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem;">
+                                    Reset to Default
+                                </button>
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 15px;">
+                            <div class="strategy-input-group">
+                                <label for="tp1-percent" style="font-size: 0.875rem; color: var(--text-secondary); display: block; margin-bottom: 5px;">TP1 %</label>
+                                <input type="number" id="tp1-percent" min="0" max="100" value="50" class="strategy-input" style="width: 100%; padding: 8px; background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); font-size: 1rem; text-align: center;">
+                            </div>
+                            <div class="strategy-input-group">
+                                <label for="tp2-percent" style="font-size: 0.875rem; color: var(--text-secondary); display: block; margin-bottom: 5px;">TP2 %</label>
+                                <input type="number" id="tp2-percent" min="0" max="100" value="20" class="strategy-input" style="width: 100%; padding: 8px; background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); font-size: 1rem; text-align: center;">
+                            </div>
+                            <div class="strategy-input-group">
+                                <label for="tp3-percent" style="font-size: 0.875rem; color: var(--text-secondary); display: block; margin-bottom: 5px;">TP3 %</label>
+                                <input type="number" id="tp3-percent" min="0" max="100" value="10" class="strategy-input" style="width: 100%; padding: 8px; background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); font-size: 1rem; text-align: center;">
+                            </div>
+                            <div class="strategy-input-group">
+                                <label for="tp4-percent" style="font-size: 0.875rem; color: var(--text-secondary); display: block; margin-bottom: 5px;">TP4 %</label>
+                                <input type="number" id="tp4-percent" min="0" max="100" value="10" class="strategy-input" style="width: 100%; padding: 8px; background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); font-size: 1rem; text-align: center;">
+                            </div>
+                            <div class="strategy-input-group">
+                                <label for="tp5-percent" style="font-size: 0.875rem; color: var(--text-secondary); display: block; margin-bottom: 5px;">TP5 %</label>
+                                <input type="number" id="tp5-percent" min="0" max="100" value="10" class="strategy-input" style="width: 100%; padding: 8px; background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); font-size: 1rem; text-align: center;">
+                            </div>
+                            <div class="strategy-input-group">
+                                <label for="tp6-percent" style="font-size: 0.875rem; color: var(--text-secondary); display: block; margin-bottom: 5px;">TP6 %</label>
+                                <input type="number" id="tp6-percent" min="0" max="100" value="0" class="strategy-input" style="width: 100%; padding: 8px; background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); font-size: 1rem; text-align: center;">
+                            </div>
+                        </div>
+                        <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 10px; margin-bottom: 0;">
+                            💡 Adjust the percentage of your position to close at each TP level. Total must equal 100%.
+                        </p>
+                    </div>
+
+                    <!-- P/L Over Time Chart -->
+                    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; margin-bottom: 30px;">
+                        <h3 style="margin: 0 0 20px 0; font-size: 1rem;">📈 Cumulative P/L Over Time</h3>
+                        <canvas id="pl-chart" style="max-height: 300px;"></canvas>
+                    </div>
+
+                    <!-- Signal Summary Stats -->
+                    <div class="stats-grid" style="margin-bottom: 30px;">
+                        <div class="stat-card">
+                            <div class="stat-icon">📊</div>
+                            <div class="stat-content">
+                                <span class="stat-label">Total Signals</span>
+                                <span class="stat-value" id="signal-total">0</span>
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-icon">✅</div>
+                            <div class="stat-content">
+                                <span class="stat-label">Winning Signals</span>
+                                <span class="stat-value" id="signal-wins">0</span>
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-icon">❌</div>
+                            <div class="stat-content">
+                                <span class="stat-label">Losing Signals</span>
+                                <span class="stat-value" id="signal-losses">0</span>
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-icon">📈</div>
+                            <div class="stat-content">
+                                <span class="stat-label">Signal Win Rate</span>
+                                <span class="stat-value" id="signal-win-rate">0%</span>
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-icon">💰</div>
+                            <div class="stat-content">
+                                <span class="stat-label">Total P/L %</span>
+                                <span class="stat-value" id="signal-total-pl">0%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Signal History Table -->
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Symbol</th>
+                                    <th>Action</th>
+                                    <th>Entry</th>
+                                    <th>Exit</th>
+                                    <th>Pips</th>
+                                    <th>Profit %</th>
+                                    <th>Outcome</th>
+                                    <th>Entry Date</th>
+                                    <th>Exit Date</th>
+                                </tr>
+                            </thead>
+                            <tbody id="signal-history-body">
+                                <tr>
+                                    <td colspan="10" class="empty-state">
+                                        <div class="loading">Loading signals...</div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    <div style="display: flex; justify-content: center; gap: 10px; margin-top: 20px;">
+                        <button id="prev-page-btn" style="padding: 8px 16px; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;" disabled>
+                            ← Previous
+                        </button>
+                        <span id="page-info" style="padding: 8px 16px; color: var(--text-secondary);">Page 1</span>
+                        <button id="next-page-btn" style="padding: 8px 16px; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer;">
+                            Next →
+                        </button>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <h3>Top Performers This Week</h3>
+                    <div id="top-performers-preview"></div>
+                </div>
+            </section>
+
+            <!-- Leaderboard Section -->
+            <section id="leaderboard-section" class="content-section">
+                <div class="section-header">
+                    <h1>🏆 Leaderboard</h1>
+                    <p class="subtitle">Top performing copy traders</p>
+                </div>
+
+                <div class="leaderboard-controls">
+                    <select id="leaderboard-metric" class="select-input">
+                        <option value="profit">Total Profit</option>
+                        <option value="win_rate">Win Rate</option>
+                        <option value="profit_factor">Profit Factor</option>
+                        <option value="roi">ROI %</option>
+                        <option value="sharpe">Sharpe Ratio</option>
+                        <option value="trades">Total Trades</option>
+                    </select>
+                    <button id="refresh-leaderboard" class="btn-secondary">🔄 Refresh</button>
+                </div>
+
+                <div class="leaderboard-table">
+                    <table id="leaderboard">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Trader</th>
+                                <th>Total Profit</th>
+                                <th>Win Rate</th>
+                                <th>Profit Factor</th>
+                                <th>Total Trades</th>
+                                <th>ROI</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leaderboard-body">
+                            <!-- Dynamic content -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- My Statistics Section -->
+            <section id="my-stats-section" class="content-section">
+                <div class="section-header">
+                    <h1>📈 My Statistics</h1>
+                    <p class="subtitle" id="my-account-id">Account: Loading...</p>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card highlight">
+                        <div class="stat-icon">💵</div>
+                        <div class="stat-content">
+                            <span class="stat-label">Total Profit/Loss</span>
+                            <span class="stat-value" id="my-profit">$0</span>
+                            <span class="stat-change" id="my-profit-change">+0%</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">🎯</div>
+                        <div class="stat-content">
+                            <span class="stat-label">Win Rate</span>
+                            <span class="stat-value" id="my-win-rate">0%</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">⚖️</div>
+                        <div class="stat-content">
+                            <span class="stat-label">Profit Factor</span>
+                            <span class="stat-value" id="my-profit-factor">0</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">📊</div>
+                        <div class="stat-content">
+                            <span class="stat-label">Total Trades</span>
+                            <span class="stat-value" id="my-total-trades">0</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">📉</div>
+                        <div class="stat-content">
+                            <span class="stat-label">Max Drawdown</span>
+                            <span class="stat-value" id="my-max-drawdown">0%</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">🔥</div>
+                        <div class="stat-content">
+                            <span class="stat-label">Win Streak</span>
+                            <span class="stat-value" id="my-win-streak">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chart-row">
+                    <div class="chart-container">
+                        <h3>Equity Curve</h3>
+                        <canvas id="equity-chart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <h3>Win/Loss Distribution</h3>
+                        <canvas id="win-loss-chart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Backtests Section -->
+            <section id="backtests-section" class="content-section">
+                <div class="section-header">
+                    <h1>🔬 Historical Backtesting</h1>
+                    <p class="subtitle">Test GH TRADES signals with your own parameters</p>
+                </div>
+
+                <!-- Backtest Simulator Form -->
+                <div class="backtest-simulator" style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+                    <h3 style="margin-bottom: 10px;">Run Custom Backtest</h3>
+                    <p style="color: var(--text-secondary); margin-bottom: 20px;">
+                        Simulate historical performance with your starting balance and risk settings
+                    </p>
+                    
+                    <div class="backtest-form">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                            <div>
+                                <label style="display: block; margin-bottom: 5px; color: var(--text-secondary);">Start Date</label>
+                                <input type="date" id="backtest-start-date" style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-dark); color: var(--text-primary);">
+                            </div>
+                            <div>
+                                <label style="display: block; margin-bottom: 5px; color: var(--text-secondary);">End Date</label>
+                                <input type="date" id="backtest-end-date" style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-dark); color: var(--text-primary);">
+                            </div>
+                            <div>
+                                <label style="display: block; margin-bottom: 5px; color: var(--text-secondary);">Starting Balance ($)</label>
+                                <input type="number" id="backtest-balance" value="10000" min="100" step="100" style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-dark); color: var(--text-primary);">
+                            </div>
+                            <div>
+                                <label style="display: block; margin-bottom: 5px; color: var(--text-secondary);">Risk Per Trade (%)</label>
+                                <input type="number" id="backtest-risk" value="5" min="0.1" max="20" step="0.1" style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-dark); color: var(--text-primary);">
+                            </div>
+                        </div>
+                        
+                        <div style="display: flex; gap: 20px; margin-bottom: 20px;">
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <input type="checkbox" id="backtest-compound" checked>
+                                <span>Compound (Risk % on current balance)</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <input type="checkbox" id="backtest-save">
+                                <span>Save result to my account</span>
+                            </label>
+                        </div>
+                        
+                        <button id="run-backtest-btn" style="padding: 12px 24px; background: var(--primary-color); color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; transition: transform 0.2s;">
+                            🚀 Run Backtest
+                        </button>
+                        <div id="backtest-loading" class="loading" style="display: none; margin-left: 15px; display: inline-block;">
+                            Running backtest...
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Backtest Results -->
+                <div id="backtest-results" class="backtest-results" style="display: none;">
+                    <h3>📊 Backtest Results</h3>
+                    
+                    <div class="stats-grid" style="margin-bottom: 30px;">
+                        <div class="stat-card">
+                            <div class="stat-icon">💰</div>
+                            <div class="stat-content">
+                                <span class="stat-label">Final Balance</span>
+                                <span class="stat-value" id="bt-final-balance">$0.00</span>
+                                <span class="stat-change" id="bt-roi">0%</span>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon">📈</div>
+                            <div class="stat-content">
+                                <span class="stat-label">Win Rate</span>
+                                <span class="stat-value" id="bt-win-rate">0%</span>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon">⚖️</div>
+                            <div class="stat-content">
+                                <span class="stat-label">Profit Factor</span>
+                                <span class="stat-value" id="bt-profit-factor">0.00</span>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon">🎯</div>
+                            <div class="stat-content">
+                                <span class="stat-label">Total Trades</span>
+                                <span class="stat-value" id="bt-total-trades">0</span>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon">📉</div>
+                            <div class="stat-content">
+                                <span class="stat-label">Max Drawdown</span>
+                                <span class="stat-value" id="bt-max-dd">0%</span>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon">📊</div>
+                            <div class="stat-content">
+                                <span class="stat-label">Sharpe Ratio</span>
+                                <span class="stat-value" id="bt-sharpe">0.00</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Charts Row -->
+                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-bottom: 30px;">
+                        <div class="chart-container">
+                            <h4>Equity Curve</h4>
+                            <canvas id="backtest-equity-chart"></canvas>
+                        </div>
+                        
+                        <div class="chart-container">
+                            <h4>TP Hit Distribution</h4>
+                            <canvas id="backtest-tp-chart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <!-- Trade List -->
+                    <div class="backtest-trades">
+                        <h4>Trade History</h4>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Signal #</th>
+                                        <th>Symbol</th>
+                                        <th>Action</th>
+                                        <th>Entry</th>
+                                        <th>Exit</th>
+                                        <th>TP Hit</th>
+                                        <th>Lots</th>
+                                        <th>Profit</th>
+                                        <th>Balance</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="backtest-trades-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Saved Backtests -->
+                <div class="saved-backtests" style="margin-top: 30px;">
+                    <h3>💾 Saved Backtest Results</h3>
+                    <div id="backtests-list" class="backtests-list">
+                        <!-- Dynamic content -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Trade History Section -->
+            <section id="trades-section" class="content-section">
+                <div class="section-header">
+                    <h1>💼 Trade History</h1>
+                    <p class="subtitle">Recent trading activity</p>
+                </div>
+
+                <div class="trades-table">
+                    <table id="trades-table">
+                        <thead>
+                            <tr>
+                                <th>Signal #</th>
+                                <th>Symbol</th>
+                                <th>Action</th>
+                                <th>Entry</th>
+                                <th>Exit</th>
+                                <th>Lots</th>
+                                <th>Profit</th>
+                                <th>Pips</th>
+                                <th>Duration</th>
+                            </tr>
+                        </thead>
+                        <tbody id="trades-body">
+                            <!-- Dynamic content -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="dashboard.js"></script>
+</body>
+</html>
