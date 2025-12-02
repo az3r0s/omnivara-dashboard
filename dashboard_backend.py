@@ -1071,3 +1071,6 @@ if __name__ == '__main__':
     port = int(os.getenv('DASHBOARD_PORT', 5001))
     logger.info(f"Starting Trading Dashboard on port {port}")
     dashboard_app.run(host='0.0.0.0', port=port, debug=True)
+
+# Alias for gunicorn
+app = dashboard_app
