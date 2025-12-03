@@ -7,6 +7,7 @@ import os
 import json
 import sqlite3
 import logging
+import requests
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 from flask import Flask, jsonify, request, send_from_directory
@@ -20,6 +21,9 @@ logger = logging.getLogger(__name__)
 dashboard_app = Flask(__name__, static_folder='dashboard_static', static_url_path='')
 CORS(dashboard_app)
 
+# Bot API Configuration (for fetching signal data)
+BOT_API_URL = os.getenv('BOT_API_URL', 'https://web-production-1299f.up.railway.app')
+
 # Discord OAuth Configuration
 DISCORD_CLIENT_ID = os.getenv('DISCORD_CLIENT_ID', '')
 DISCORD_CLIENT_SECRET = os.getenv('DISCORD_CLIENT_SECRET', '')
@@ -28,7 +32,7 @@ DISCORD_OAUTH_URL = 'https://discord.com/api/oauth2/authorize'
 DISCORD_TOKEN_URL = 'https://discord.com/api/oauth2/token'
 DISCORD_API_URL = 'https://discord.com/api/v10'
 
-# Database path
+# Database path (for user management, strategies, etc. - NOT for signal data)
 DASHBOARD_DB = "trading_dashboard.db"
 
 @dataclass
@@ -704,9 +708,46 @@ def get_overview():
 
 @dashboard_app.route('/api/signal-history', methods=['GET'])
 def get_signal_history():
-    """Get complete signal history from GH TRADES channel with results"""
+    """Get complete signal history - proxies to bot API for real-time data"""
     try:
         # Get query parameters
+        limit = int(request.args.get('limit', 100))
+        offset = int(request.args.get('offset', 0))
+        symbol = request.args.get('symbol', None)
+        
+        # Fetch from bot's API endpoint
+        params = {'limit': limit, 'offset': offset}
+        if symbol:
+            params['symbol'] = symbol
+        
+        logger.info(f"Fetching signal history from bot API: {BOT_API_URL}/dashboard/signal_history")
+        
+        response = requests.get(
+            f"{BOT_API_URL}/dashboard/signal_history",
+            params=params,
+            timeout=10
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            logger.info(f"✅ Fetched {len(data.get('signals', []))} signals from bot API")
+            return jsonify(data)
+        else:
+            logger.error(f"❌ Bot API returned status {response.status_code}")
+            return jsonify({
+                "error": "Failed to fetch signals from bot",
+                "status": response.status_code
+            }), 502
+            
+    except requests.exceptions.RequestException as e:
+        logger.error(f"❌ Failed to connect to bot API: {e}")
+        # Fallback to local database if bot API is unavailable
+        return get_signal_history_fallback()
+
+def get_signal_history_fallback():
+    """Fallback: Read from local database if bot API is unavailable"""
+    try:
+        logger.warning("⚠️ Using fallback - reading from local database")
         limit = int(request.args.get('limit', 100))
         offset = int(request.args.get('offset', 0))
         symbol = request.args.get('symbol', None)
@@ -714,11 +755,6 @@ def get_signal_history():
         conn = sqlite3.connect('telegram_messages.db')
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
-        
-        # Build query
-        query = '''
-            SELECT 
-                sd.signal_number,
                 sd.symbol,
                 sd.action,
                 sd.entry_price,
@@ -1071,6 +1107,3 @@ if __name__ == '__main__':
     port = int(os.getenv('DASHBOARD_PORT', 5001))
     logger.info(f"Starting Trading Dashboard on port {port}")
     dashboard_app.run(host='0.0.0.0', port=port, debug=True)
-
-# Alias for gunicorn
-app = dashboard_app
