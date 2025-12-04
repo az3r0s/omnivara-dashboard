@@ -755,6 +755,10 @@ def get_signal_history_fallback():
         conn = sqlite3.connect('telegram_messages.db')
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
+        
+        query = '''
+            SELECT 
+                sd.signal_number,
                 sd.symbol,
                 sd.action,
                 sd.entry_price,
