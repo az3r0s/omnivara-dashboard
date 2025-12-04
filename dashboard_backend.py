@@ -1107,6 +1107,9 @@ def run_historical_backtest():
             "message": str(e)
         }), 500
 
+# Gunicorn entry point
+app = dashboard_app
+
 if __name__ == '__main__':
     port = int(os.getenv('DASHBOARD_PORT', 5001))
     logger.info(f"Starting Trading Dashboard on port {port}")
